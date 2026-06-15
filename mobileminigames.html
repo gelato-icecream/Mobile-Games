@@ -338,6 +338,116 @@
             background: var(--border-color);
         }
 
+        /* Othello */
+        .othello-board {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 2px;
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 1;
+            background: #276749; /* Dark green */
+            padding: 4px;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            margin-top: 1rem;
+        }
+
+        .othello-cell {
+            background: #2f855a; /* Lighter green */
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 2px;
+            position: relative;
+        }
+
+        .othello-cell:active {
+            background: #276749;
+        }
+
+        .othello-piece {
+            width: 85%;
+            height: 85%;
+            border-radius: 50%;
+            position: absolute;
+            transition: transform 0.4s, background-color 0.4s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .othello-piece.black { background: #1a202c; }
+        .othello-piece.white { background: #f7fafc; }
+        
+        .othello-cell.valid-move::after {
+            content: '';
+            width: 25%;
+            height: 25%;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.2);
+            position: absolute;
+        }
+
+        /* Go */
+        .go-board-wrapper {
+            background: #f6ad55; /* Wood color */
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            margin-top: 1rem;
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .go-board {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            width: 100%;
+            aspect-ratio: 1;
+            background: transparent;
+            position: relative;
+            border: 1px solid #7b341e;
+        }
+        
+        .go-grid-cell {
+            border: 1px solid #7b341e;
+            box-sizing: border-box;
+        }
+        
+        .go-intersections {
+            position: absolute;
+            top: -6.25%;
+            left: -6.25%;
+            width: 112.5%;
+            height: 112.5%;
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            grid-template-rows: repeat(9, 1fr);
+        }
+
+        .go-intersection {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            z-index: 2;
+        }
+
+        .go-stone {
+            width: 85%;
+            height: 85%;
+            border-radius: 50%;
+            position: absolute;
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.4);
+            transition: transform 0.2s;
+        }
+
+        .go-stone.black { background: radial-gradient(circle at 30% 30%, #4a5568, #1a202c); }
+        .go-stone.white { background: radial-gradient(circle at 30% 30%, #ffffff, #e2e8f0); }
+
         /* Controls */
         .controls {
             margin-top: 2rem;
@@ -391,6 +501,14 @@
                 <h2>Ultimate Tic Tac Toe</h2>
                 <p>A deep, strategic variant where each move dictates where your opponent plays next.</p>
             </div>
+            <div class="game-card" onclick="app.showScreen('othello')">
+                <h2>Othello</h2>
+                <p>Flank your opponent's pieces to flip them to your color.</p>
+            </div>
+            <div class="game-card" onclick="app.showScreen('go')">
+                <h2>Go (9x9)</h2>
+                <p>Surround empty space and capture stones. Features a simple heuristic AI.</p>
+            </div>
         </div>
     </div>
 
@@ -442,6 +560,41 @@
         </div>
     </div>
 
+    <!-- Othello Screen -->
+    <div id="screen-othello" class="screen">
+        <div class="game-header">
+            <button class="btn-back" onclick="app.showScreen('hub')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                Back
+            </button>
+            <div class="status" id="othello-status">Your turn (Black)</div>
+            <div style="width: 70px;"></div>
+        </div>
+        <div class="othello-board" id="othello-board"></div>
+        <div class="controls">
+            <button class="btn" onclick="games.othello.reset()">Restart Game</button>
+        </div>
+    </div>
+
+    <!-- Go Screen -->
+    <div id="screen-go" class="screen">
+        <div class="game-header">
+            <button class="btn-back" onclick="app.showScreen('hub')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                Back
+            </button>
+            <div class="status" id="go-status" style="font-size: 1rem;">Your turn (Black)</div>
+            <div style="width: 70px;"></div>
+        </div>
+        <div class="go-board-wrapper">
+            <div class="go-board" id="go-board-bg"></div>
+        </div>
+        <div class="controls" style="margin-top: 1rem; gap: 0.5rem">
+            <button class="btn" style="padding: 0.8rem 1rem;" onclick="games.go.pass()">Pass Turn</button>
+            <button class="btn" style="padding: 0.8rem 1rem; background: var(--secondary-color); color: var(--text-color);" onclick="games.go.reset()">Restart</button>
+        </div>
+    </div>
+
     <script>
         // --- Core Application Logic ---
         const app = {
@@ -461,6 +614,8 @@
                 games.ttt.init();
                 games.c4.init();
                 games.uttt.init();
+                games.othello.init();
+                games.go.init();
             },
 
             showScreen(screenId) {
@@ -471,6 +626,8 @@
                 if (screenId === 'ttt') games.ttt.reset();
                 if (screenId === 'c4') games.c4.reset();
                 if (screenId === 'uttt') games.uttt.reset();
+                if (screenId === 'othello') games.othello.reset();
+                if (screenId === 'go') games.go.reset();
             }
         };
 
@@ -1032,6 +1189,364 @@
                     this.gameOver = true;
                     document.getElementById('uttt-status').textContent = msg;
                     this.updateUI(); 
+                }
+            },
+
+            // 4. Othello
+            othello: {
+                board: Array(8).fill(null).map(() => Array(8).fill(null)),
+                currentPlayer: 'B',
+                gameOver: false,
+                
+                init() {
+                    const boardEl = document.getElementById('othello-board');
+                    boardEl.innerHTML = '';
+                    for (let r = 0; r < 8; r++) {
+                        for (let c = 0; c < 8; c++) {
+                            const cell = document.createElement('div');
+                            cell.className = 'othello-cell';
+                            cell.id = `oth-c-${r}-${c}`;
+                            cell.onclick = () => this.makeMove(r, c);
+                            boardEl.appendChild(cell);
+                        }
+                    }
+                },
+                reset() {
+                    this.board = Array(8).fill(null).map(() => Array(8).fill(null));
+                    this.board[3][3] = 'W'; this.board[3][4] = 'B';
+                    this.board[4][3] = 'B'; this.board[4][4] = 'W';
+                    this.currentPlayer = 'B';
+                    this.gameOver = false;
+                    this.updateUI();
+                    document.getElementById('othello-status').textContent = "Your turn (Black)";
+                },
+                getValidMoves(player) {
+                    let moves = [];
+                    for (let r = 0; r < 8; r++) {
+                        for (let c = 0; c < 8; c++) {
+                            if (this.board[r][c] === null && this.getFlips(r, c, player).length > 0) {
+                                moves.push({r, c});
+                            }
+                        }
+                    }
+                    return moves;
+                },
+                getFlips(r, c, player) {
+                    let flips = [];
+                    let opp = player === 'B' ? 'W' : 'B';
+                    const dirs = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+                    for (let [dr, dc] of dirs) {
+                        let tempFlips = [];
+                        let nr = r + dr; let nc = c + dc;
+                        while(nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && this.board[nr][nc] === opp) {
+                            tempFlips.push({r: nr, c: nc});
+                            nr += dr; nc += dc;
+                        }
+                        if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && this.board[nr][nc] === player && tempFlips.length > 0) {
+                            flips.push(...tempFlips);
+                        }
+                    }
+                    return flips;
+                },
+                makeMove(r, c) {
+                    if (this.gameOver || this.currentPlayer !== 'B') return;
+                    let flips = this.getFlips(r, c, 'B');
+                    if (flips.length === 0) return;
+                    
+                    this.board[r][c] = 'B';
+                    for (let f of flips) this.board[f.r][f.c] = 'B';
+                    
+                    this.checkGameState();
+                },
+                checkGameState() {
+                    let nextPlayer = this.currentPlayer === 'B' ? 'W' : 'B';
+                    let nextMoves = this.getValidMoves(nextPlayer);
+                    
+                    if (nextMoves.length === 0) {
+                        let currentMoves = this.getValidMoves(this.currentPlayer);
+                        if (currentMoves.length === 0) {
+                            this.endGame();
+                            return;
+                        } else {
+                            nextPlayer = this.currentPlayer;
+                        }
+                    }
+                    
+                    this.currentPlayer = nextPlayer;
+                    this.updateUI();
+                    
+                    if (this.currentPlayer === 'W') {
+                        document.getElementById('othello-status').textContent = "AI is thinking...";
+                        setTimeout(() => this.makeAIMove(), 500);
+                    } else {
+                        document.getElementById('othello-status').textContent = "Your turn (Black)";
+                    }
+                },
+                makeAIMove() {
+                    if(this.gameOver) return;
+                    let moves = this.getValidMoves('W');
+                    if(moves.length === 0) { this.checkGameState(); return; }
+                    
+                    const weights = [
+                        [100,-20, 10,  5,  5, 10,-20,100],
+                        [-20,-50, -2, -2, -2, -2,-50,-20],
+                        [ 10, -2,  1,  1,  1,  1, -2, 10],
+                        [  5, -2,  1,  1,  1,  1, -2,  5],
+                        [  5, -2,  1,  1,  1,  1, -2,  5],
+                        [ 10, -2,  1,  1,  1,  1, -2, 10],
+                        [-20,-50, -2, -2, -2, -2,-50,-20],
+                        [100,-20, 10,  5,  5, 10,-20,100]
+                    ];
+                    
+                    let bestScore = -Infinity;
+                    let bestMove = moves[0];
+                    for(let m of moves) {
+                        let score = weights[m.r][m.c];
+                        score += Math.random() * 2;
+                        if(score > bestScore) {
+                            bestScore = score;
+                            bestMove = m;
+                        }
+                    }
+                    
+                    let flips = this.getFlips(bestMove.r, bestMove.c, 'W');
+                    this.board[bestMove.r][bestMove.c] = 'W';
+                    for (let f of flips) this.board[f.r][f.c] = 'W';
+                    
+                    this.checkGameState();
+                },
+                updateUI() {
+                    let validMoves = this.currentPlayer === 'B' && !this.gameOver ? this.getValidMoves('B') : [];
+                    for (let r = 0; r < 8; r++) {
+                        for (let c = 0; c < 8; c++) {
+                            const cell = document.getElementById(`oth-c-${r}-${c}`);
+                            cell.innerHTML = '';
+                            if (this.board[r][c]) {
+                                const piece = document.createElement('div');
+                                piece.className = `othello-piece ${this.board[r][c] === 'B' ? 'black' : 'white'}`;
+                                cell.appendChild(piece);
+                            } else if (validMoves.some(m => m.r === r && m.c === c)) {
+                                cell.classList.add('valid-move');
+                            }
+                        }
+                    }
+                },
+                endGame() {
+                    this.gameOver = true;
+                    this.updateUI();
+                    let b = 0, w = 0;
+                    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+                        if(this.board[r][c] === 'B') b++;
+                        if(this.board[r][c] === 'W') w++;
+                    }
+                    if (b > w) document.getElementById('othello-status').textContent = `You win! ${b}-${w}`;
+                    else if (w > b) document.getElementById('othello-status').textContent = `AI wins! ${w}-${b}`;
+                    else document.getElementById('othello-status').textContent = `Draw! ${b}-${w}`;
+                }
+            },
+
+            // 5. Go
+            go: {
+                board: Array(9).fill(null).map(() => Array(9).fill(null)),
+                currentPlayer: 'B',
+                gameOver: false,
+                passes: 0,
+                history: [],
+                
+                init() {
+                    const bg = document.getElementById('go-board-bg');
+                    bg.innerHTML = '';
+                    for(let i=0; i<64; i++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'go-grid-cell';
+                        bg.appendChild(cell);
+                    }
+                    const inter = document.createElement('div');
+                    inter.className = 'go-intersections';
+                    for (let r = 0; r < 9; r++) {
+                        for (let c = 0; c < 9; c++) {
+                            const intersection = document.createElement('div');
+                            intersection.className = 'go-intersection';
+                            intersection.id = `go-c-${r}-${c}`;
+                            intersection.onclick = () => this.makeMove(r, c);
+                            inter.appendChild(intersection);
+                        }
+                    }
+                    bg.appendChild(inter);
+                },
+                reset() {
+                    this.board = Array(9).fill(null).map(() => Array(9).fill(null));
+                    this.currentPlayer = 'B';
+                    this.gameOver = false;
+                    this.passes = 0;
+                    this.history = [];
+                    this.updateUI();
+                    document.getElementById('go-status').textContent = "Your turn (Black)";
+                },
+                pass() {
+                    if(this.gameOver || this.currentPlayer !== 'B') return;
+                    this.passes++;
+                    this.history.push(null);
+                    if(this.passes >= 2) {
+                        this.endGame();
+                        return;
+                    }
+                    this.currentPlayer = 'W';
+                    this.updateUI();
+                    document.getElementById('go-status').textContent = "AI is thinking...";
+                    setTimeout(() => this.makeAIMove(), 600);
+                },
+                makeMove(r, c) {
+                    if (this.gameOver || this.currentPlayer !== 'B') return;
+                    if (this.board[r][c] !== null) return;
+                    
+                    if (this.playStone(r, c, 'B')) {
+                        this.passes = 0;
+                        this.currentPlayer = 'W';
+                        this.updateUI();
+                        document.getElementById('go-status').textContent = "AI is thinking...";
+                        setTimeout(() => this.makeAIMove(), 600);
+                    }
+                },
+                playStone(r, c, player) {
+                    let newBoard = this.board.map(row => [...row]);
+                    newBoard[r][c] = player;
+                    
+                    let opp = player === 'B' ? 'W' : 'B';
+                    
+                    const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+                    for (let [dr,dc] of dirs) {
+                        let nr = r+dr, nc = c+dc;
+                        if (nr>=0&&nr<9&&nc>=0&&nc<9 && newBoard[nr][nc] === opp) {
+                            let group = this.getGroup(newBoard, nr, nc);
+                            if (this.getLiberties(newBoard, group) === 0) {
+                                for(let st of group) newBoard[st.r][st.c] = null;
+                            }
+                        }
+                    }
+                    
+                    let myGroup = this.getGroup(newBoard, r, c);
+                    if (this.getLiberties(newBoard, myGroup) === 0) {
+                        return false;
+                    }
+                    
+                    let boardHash = JSON.stringify(newBoard);
+                    if (this.history.includes(boardHash)) {
+                        return false;
+                    }
+                    
+                    this.board = newBoard;
+                    this.history.push(boardHash);
+                    return true;
+                },
+                getGroup(board, r, c) {
+                    let color = board[r][c];
+                    let group = [];
+                    let visited = new Set();
+                    let queue = [{r, c}];
+                    visited.add(`${r},${c}`);
+                    
+                    while(queue.length > 0) {
+                        let curr = queue.shift();
+                        group.push(curr);
+                        const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+                        for (let [dr,dc] of dirs) {
+                            let nr = curr.r+dr, nc = curr.c+dc;
+                            if (nr>=0&&nr<9&&nc>=0&&nc<9 && board[nr][nc] === color && !visited.has(`${nr},${nc}`)) {
+                                visited.add(`${nr},${nc}`);
+                                queue.push({r: nr, c: nc});
+                            }
+                        }
+                    }
+                    return group;
+                },
+                getLiberties(board, group) {
+                    let libs = new Set();
+                    const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+                    for (let st of group) {
+                        for (let [dr,dc] of dirs) {
+                            let nr = st.r+dr, nc = st.c+dc;
+                            if (nr>=0&&nr<9&&nc>=0&&nc<9 && board[nr][nc] === null) {
+                                libs.add(`${nr},${nc}`);
+                            }
+                        }
+                    }
+                    return libs.size;
+                },
+                makeAIMove() {
+                    if(this.gameOver) return;
+                    
+                    let validMoves = [];
+                    for(let r=0; r<9; r++) {
+                        for(let c=0; c<9; c++) {
+                            if(this.board[r][c] === null) {
+                                let clone = this.board.map(row => [...row]);
+                                let oldHistory = [...this.history];
+                                if (this.playStone(r, c, 'W')) {
+                                    let score = 0;
+                                    let myGroup = this.getGroup(this.board, r, c);
+                                    let libs = this.getLiberties(this.board, myGroup);
+                                    if(libs === 1) score -= 100;
+                                    
+                                    // Reward captures by seeing if board has fewer black stones
+                                    let bOld = 0, bNew = 0;
+                                    for(let row of clone) for(let cell of row) if(cell==='B') bOld++;
+                                    for(let row of this.board) for(let cell of row) if(cell==='B') bNew++;
+                                    if (bNew < bOld) score += (bOld - bNew) * 50;
+                                    
+                                    score += Math.random() * 10;
+                                    
+                                    validMoves.push({r, c, score});
+                                    this.board = clone;
+                                    this.history = oldHistory;
+                                }
+                            }
+                        }
+                    }
+                    
+                    if(validMoves.length === 0) {
+                        this.passes++;
+                        this.history.push(null);
+                        if(this.passes >= 2) this.endGame();
+                        else {
+                            this.currentPlayer = 'B';
+                            this.updateUI();
+                            document.getElementById('go-status').textContent = "AI Passed. Your turn (Black)";
+                        }
+                        return;
+                    }
+                    
+                    validMoves.sort((a,b) => b.score - a.score);
+                    let best = validMoves[0];
+                    this.playStone(best.r, best.c, 'W');
+                    this.passes = 0;
+                    this.currentPlayer = 'B';
+                    this.updateUI();
+                    document.getElementById('go-status').textContent = "Your turn (Black)";
+                },
+                updateUI() {
+                    for(let r=0; r<9; r++) {
+                        for(let c=0; c<9; c++) {
+                            const inter = document.getElementById(`go-c-${r}-${c}`);
+                            inter.innerHTML = '';
+                            if(this.board[r][c]) {
+                                const stone = document.createElement('div');
+                                stone.className = `go-stone ${this.board[r][c] === 'B' ? 'black' : 'white'}`;
+                                inter.appendChild(stone);
+                            }
+                        }
+                    }
+                },
+                endGame() {
+                    this.gameOver = true;
+                    let b = 0, w = 0;
+                    for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+                        if(this.board[r][c] === 'B') b++;
+                        if(this.board[r][c] === 'W') w++;
+                    }
+                    let res = "";
+                    if(b>w) res = "You win!"; else if(w>b) res = "AI wins!"; else res="Draw!";
+                    document.getElementById('go-status').textContent = `${res} B:${b} W:${w}`;
                 }
             }
         };
