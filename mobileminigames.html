@@ -461,6 +461,64 @@
         .go-stone.black { background: radial-gradient(circle at 30% 30%, #4a5568, #1a202c); }
         .go-stone.white { background: radial-gradient(circle at 30% 30%, #ffffff, #e2e8f0); }
 
+        /* Pong */
+        .pong-board {
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 2 / 3;
+            background: #111827;
+            position: relative;
+            border-radius: 12px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5), 0 10px 25px rgba(0,0,0,0.3);
+            overflow: hidden;
+            margin-top: 1rem;
+            touch-action: none;
+        }
+
+        .pong-net {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: repeating-linear-gradient(90deg, transparent, transparent 10px, rgba(255,255,255,0.2) 10px, rgba(255,255,255,0.2) 20px);
+            transform: translateY(-50%);
+        }
+
+        .paddle {
+            position: absolute;
+            width: 25%;
+            height: 3%;
+            background: var(--primary-color);
+            border-radius: 6px;
+            left: 37.5%;
+            box-shadow: 0 0 10px var(--primary-color);
+            z-index: 2;
+        }
+
+        .paddle.ai {
+            top: 5%;
+            background: var(--accent-x);
+            box-shadow: 0 0 10px var(--accent-x);
+        }
+
+        .paddle.player {
+            bottom: 5%;
+        }
+
+        .ball {
+            position: absolute;
+            width: 4%;
+            aspect-ratio: 1;
+            background: #fff;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 10px #fff;
+            z-index: 2;
+        }
+
         /* Controls */
         .controls {
             margin-top: 2rem;
@@ -521,6 +579,10 @@
             <div class="game-card" onclick="app.showScreen('go')">
                 <h2>Go (9x9)</h2>
                 <p>Surround empty space and capture stones. Features a simple heuristic AI.</p>
+            </div>
+            <div class="game-card" onclick="app.showScreen('pong')">
+                <h2>Pong</h2>
+                <p>Real-time arcade classic. Drag to move your paddle and beat the AI to 5 points.</p>
             </div>
         </div>
     </div>
@@ -589,6 +651,28 @@
         </div>
     </div>
 
+    <!-- Pong Screen -->
+    <div id="screen-pong" class="screen">
+        <div class="game-header">
+            <button class="btn-back" onclick="app.showScreen('hub')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                Back
+            </button>
+            <div class="status" id="pong-status" style="font-size: 1.2rem; font-family: monospace; font-weight: 800;">AI 0 - 0 You</div>
+            <div style="width: 70px;"></div>
+        </div>
+        <div class="pong-board" id="pong-board">
+            <div class="pong-net"></div>
+            <div class="paddle ai" id="paddle-ai"></div>
+            <div class="paddle player" id="paddle-player"></div>
+            <div class="ball" id="pong-ball"></div>
+        </div>
+        <div class="controls" style="margin-top: 1rem;">
+            <button class="btn" onclick="games.pong.reset()">Restart Game</button>
+        </div>
+        <p style="margin-top: 1rem; opacity: 0.7; font-size: 0.9rem; text-align: center;">Touch and drag on the board to move your paddle.</p>
+    </div>
+
     <!-- Go Screen -->
     <div id="screen-go" class="screen">
         <div class="game-header">
@@ -636,6 +720,7 @@
                 games.uttt.init();
                 games.othello.init();
                 games.go.init();
+                games.pong.init();
             },
 
             showScreen(screenId) {
@@ -643,11 +728,15 @@
                 document.getElementById(`screen-${screenId}`).classList.add('active');
                 this.currentScreen = screenId;
 
+                // Stop pong loop if leaving
+                if (screenId !== 'pong' && games.pong.stop) games.pong.stop();
+
                 if (screenId === 'ttt') games.ttt.reset();
                 if (screenId === 'c4') games.c4.reset();
                 if (screenId === 'uttt') games.uttt.reset();
                 if (screenId === 'othello') games.othello.reset();
                 if (screenId === 'go') games.go.reset();
+                if (screenId === 'pong') games.pong.reset();
             }
         };
 
@@ -1626,6 +1715,202 @@
                     let res = "";
                     if(b>w) res = "You win!"; else if(w>b) res = "AI wins!"; else res="Draw!";
                     document.getElementById('go-status').textContent = `${res} B:${b} W:${w}`;
+                }
+            },
+
+            // 6. Pong
+            pong: {
+                board: null,
+                paddleAI: null,
+                paddlePlayer: null,
+                ballEl: null,
+                
+                isRunning: false,
+                lastTime: 0,
+                scoreAI: 0,
+                scorePlayer: 0,
+                gameOver: false,
+                
+                // State normalized to 0-100 percentages for responsiveness
+                ball: { x: 50, y: 50, vx: 0, vy: 0, size: 4 }, // 4% width
+                paddleWidth: 25,
+                playerX: 37.5,
+                aiX: 37.5,
+                aiSpeed: 30, // % per second
+                ballSpeedMultiplier: 1,
+
+                init() {
+                    this.board = document.getElementById('pong-board');
+                    this.paddleAI = document.getElementById('paddle-ai');
+                    this.paddlePlayer = document.getElementById('paddle-player');
+                    this.ballEl = document.getElementById('pong-ball');
+                    
+                    // Touch controls
+                    this.board.addEventListener('touchmove', (e) => {
+                        if(this.gameOver || !this.isRunning) return;
+                        e.preventDefault();
+                        const touch = e.touches[0];
+                        const rect = this.board.getBoundingClientRect();
+                        let x = (touch.clientX - rect.left) / rect.width * 100;
+                        x = Math.max(0, Math.min(100 - this.paddleWidth, x - this.paddleWidth/2));
+                        this.playerX = x;
+                        this.paddlePlayer.style.left = `${this.playerX}%`;
+                    }, {passive: false});
+
+                    // Mouse controls fallback
+                    let isDragging = false;
+                    this.board.addEventListener('mousedown', () => isDragging = true);
+                    window.addEventListener('mouseup', () => isDragging = false);
+                    this.board.addEventListener('mousemove', (e) => {
+                        if(!isDragging || this.gameOver || !this.isRunning) return;
+                        const rect = this.board.getBoundingClientRect();
+                        let x = (e.clientX - rect.left) / rect.width * 100;
+                        x = Math.max(0, Math.min(100 - this.paddleWidth, x - this.paddleWidth/2));
+                        this.playerX = x;
+                        this.paddlePlayer.style.left = `${this.playerX}%`;
+                    });
+                },
+
+                reset() {
+                    this.scoreAI = 0;
+                    this.scorePlayer = 0;
+                    this.gameOver = false;
+                    this.ballSpeedMultiplier = 1;
+                    this.updateScore();
+                    this.resetBall();
+                    this.start();
+                },
+
+                resetBall() {
+                    this.ball.x = 50;
+                    this.ball.y = 50;
+                    
+                    // Random angle
+                    const angle = (Math.random() * Math.PI / 2) - Math.PI / 4;
+                    const speed = 40; // base % per second
+                    const dir = Math.random() > 0.5 ? 1 : -1;
+                    
+                    this.ball.vx = Math.sin(angle) * speed;
+                    this.ball.vy = Math.cos(angle) * speed * dir;
+                    this.ballSpeedMultiplier = 1;
+                    
+                    this.aiX = 37.5;
+                    this.playerX = 37.5;
+                    this.paddleAI.style.left = `${this.aiX}%`;
+                    this.paddlePlayer.style.left = `${this.playerX}%`;
+                    this.draw();
+                },
+
+                start() {
+                    if(!this.isRunning) {
+                        this.isRunning = true;
+                        this.lastTime = performance.now();
+                        requestAnimationFrame((t) => this.loop(t));
+                    }
+                },
+
+                stop() {
+                    this.isRunning = false;
+                },
+
+                loop(currentTime) {
+                    if(!this.isRunning) return;
+                    
+                    const dt = (currentTime - this.lastTime) / 1000;
+                    this.lastTime = currentTime;
+                    
+                    if(!this.gameOver) {
+                        this.update(dt);
+                        this.draw();
+                    }
+                    
+                    requestAnimationFrame((t) => this.loop(t));
+                },
+
+                update(dt) {
+                    // Update AI
+                    let targetX = this.ball.x - (this.paddleWidth / 2);
+                    if (this.aiX < targetX) this.aiX += Math.min(this.aiSpeed * dt, targetX - this.aiX);
+                    if (this.aiX > targetX) this.aiX -= Math.min(this.aiSpeed * dt, this.aiX - targetX);
+                    this.aiX = Math.max(0, Math.min(100 - this.paddleWidth, this.aiX));
+
+                    // Move ball
+                    this.ball.x += this.ball.vx * dt * this.ballSpeedMultiplier;
+                    this.ball.y += this.ball.vy * dt * this.ballSpeedMultiplier;
+
+                    // Wall collisions (left/right)
+                    if (this.ball.x <= 0) {
+                        this.ball.x = 0;
+                        this.ball.vx *= -1;
+                    } else if (this.ball.x >= 100 - this.ball.size) {
+                        this.ball.x = 100 - this.ball.size;
+                        this.ball.vx *= -1;
+                    }
+
+                    // Paddle collision
+                    // Note: aspect ratio is 2/3. So Y axis is 1.5x longer physically than X axis.
+                    // This means a 4% X size ball is 2.66% Y size.
+                    const ballYSize = this.ball.size * (2/3);
+                    const paddleHeight = 3; 
+
+                    // AI paddle (Top: 5%)
+                    const aiBottom = 5 + paddleHeight;
+                    if (this.ball.y <= aiBottom && this.ball.vy < 0) {
+                        if (this.ball.x + this.ball.size >= this.aiX && this.ball.x <= this.aiX + this.paddleWidth) {
+                            this.ball.y = aiBottom;
+                            this.ball.vy *= -1;
+                            let hitPos = (this.ball.x - this.aiX) / this.paddleWidth;
+                            this.ball.vx = (hitPos - 0.5) * 60;
+                            this.ballSpeedMultiplier += 0.05;
+                        }
+                    }
+
+                    // Player paddle (Bottom: 95% from top minus height)
+                    const playerTop = 95 - paddleHeight - ballYSize; 
+                    if (this.ball.y >= playerTop && this.ball.vy > 0) {
+                        if (this.ball.x + this.ball.size >= this.playerX && this.ball.x <= this.playerX + this.paddleWidth) {
+                            this.ball.y = playerTop;
+                            this.ball.vy *= -1;
+                            let hitPos = (this.ball.x - this.playerX) / this.paddleWidth;
+                            this.ball.vx = (hitPos - 0.5) * 60;
+                            this.ballSpeedMultiplier += 0.05;
+                        }
+                    }
+
+                    // Scoring
+                    if (this.ball.y < 0) {
+                        this.scorePlayer++;
+                        this.checkWin();
+                    } else if (this.ball.y > 100) {
+                        this.scoreAI++;
+                        this.checkWin();
+                    }
+                },
+
+                checkWin() {
+                    this.updateScore();
+                    if (this.scoreAI >= 5) {
+                        this.endGame("AI Wins!");
+                    } else if (this.scorePlayer >= 5) {
+                        this.endGame("You Win!");
+                    } else {
+                        this.resetBall();
+                    }
+                },
+
+                updateScore() {
+                    document.getElementById('pong-status').textContent = `AI ${this.scoreAI} - ${this.scorePlayer} You`;
+                },
+
+                draw() {
+                    this.paddleAI.style.left = `${this.aiX}%`;
+                    this.ballEl.style.left = `${this.ball.x}%`;
+                    this.ballEl.style.top = `${this.ball.y}%`;
+                },
+
+                endGame(msg) {
+                    this.gameOver = true;
+                    document.getElementById('pong-status').textContent = msg;
                 }
             }
         };
