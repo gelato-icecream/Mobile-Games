@@ -531,11 +531,24 @@
             border-radius: 4px;
             z-index: 1;
             transition: opacity 0.2s, background 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #111827;
+            font-weight: bold;
+            font-size: 0.8rem;
         }
         
         .pong-block.hit-1 { background: #34d399; box-shadow: 0 0 8px #34d399; }
         .pong-block.hit-2 { background: #fbbf24; box-shadow: 0 0 8px #fbbf24; }
         .pong-block.hit-3 { background: #f87171; box-shadow: 0 0 8px #f87171; }
+        .pong-block.hit-4 { background: #a78bfa; box-shadow: 0 0 8px #a78bfa; }
+        .pong-block.hit-5 { background: #60a5fa; box-shadow: 0 0 8px #60a5fa; }
+        .pong-block.hit-6 { background: #f472b6; box-shadow: 0 0 8px #f472b6; }
+        .pong-block.hit-7 { background: #2dd4bf; box-shadow: 0 0 8px #2dd4bf; }
+        .pong-block.hit-8 { background: #fb923c; box-shadow: 0 0 8px #fb923c; }
+        .pong-block.hit-9 { background: #c084fc; box-shadow: 0 0 8px #c084fc; }
+        .pong-block.hit-10 { background: #e879f9; box-shadow: 0 0 8px #e879f9; }
 
         /* RPS */
         .rps-container {
@@ -926,6 +939,7 @@
                 <option value="classic">Classic Mode</option>
                 <option value="multiball">Multiball Mode</option>
                 <option value="blocks">Blocks Mode</option>
+                <option value="blocks_multiball">Blocks & Multiball Mode</option>
             </select>
         </div>
         <div class="pong-board" id="pong-board">
@@ -2148,7 +2162,7 @@
                 scorePlayer: 0,
                 gameOver: false,
                 
-                mode: 'classic', // 'classic', 'multiball', 'blocks'
+                mode: 'classic', // 'classic', 'multiball', 'blocks', 'blocks_multiball'
                 balls: [],
                 blocks: [], // {x, y, w, h, hp, el}
                 lastBallAdded: 0,
@@ -2224,7 +2238,7 @@
                     this.lastBallAdded = performance.now();
                     this.lastBlockAdded = performance.now();
 
-                    if (this.mode === 'blocks') {
+                    if (this.mode === 'blocks' || this.mode === 'blocks_multiball') {
                         this.setupBlocks();
                     }
                     this.draw();
@@ -2238,10 +2252,11 @@
                             const h = 4;
                             const x = 20 + c * 16;
                             const y = 40 + r * 10;
-                            const hp = r === 1 ? 2 : 1; // Middle row has 2 hp
+                            const hp = 1 + Math.floor(Math.random() * 10);
                             
                             const el = document.createElement('div');
                             el.className = `pong-block hit-${hp}`;
+                            el.textContent = hp;
                             el.style.width = `${w}%`;
                             el.style.height = `${h}%`;
                             el.style.left = `${x}%`;
@@ -2256,14 +2271,28 @@
                 spawnRandomBlock(difficulty) {
                     const w = 12;
                     const h = 4;
-                    const x = 10 + Math.random() * (80 - w);
-                    const y = 20 + Math.random() * (60 - h);
                     
-                    const maxHp = Math.min(3, 1 + Math.floor(difficulty / 5));
-                    const hp = 1 + Math.floor(Math.random() * maxHp);
+                    let x, y, overlap, attempts = 0;
+                    do {
+                        x = 10 + Math.random() * (80 - w);
+                        y = 20 + Math.random() * (60 - h);
+                        overlap = false;
+                        for (let b of this.blocks) {
+                            if (x < b.x + b.w && x + w > b.x && y < b.y + b.h && y + h > b.y) {
+                                overlap = true;
+                                break;
+                            }
+                        }
+                        attempts++;
+                    } while (overlap && attempts < 20);
+                    
+                    if (overlap) return; // Too crowded
+                    
+                    const hp = 1 + Math.floor(Math.random() * 10);
                     
                     const el = document.createElement('div');
                     el.className = `pong-block hit-${hp}`;
+                    el.textContent = hp;
                     el.style.width = `${w}%`;
                     el.style.height = `${h}%`;
                     el.style.left = `${x}%`;
@@ -2319,14 +2348,14 @@
                 },
 
                 update(dt, currentTime) {
-                    if (this.mode === 'multiball') {
-                        if (currentTime - this.lastBallAdded > 10000) {
+                    if (this.mode === 'multiball' || this.mode === 'blocks_multiball') {
+                        if (currentTime - this.lastBallAdded > 4000) {
                             this.addBall();
                             this.lastBallAdded = currentTime;
                         }
                     }
 
-                    if (this.mode === 'blocks') {
+                    if (this.mode === 'blocks' || this.mode === 'blocks_multiball') {
                         let difficulty = (this.scorePlayer + this.scoreAI);
                         let spawnRate = Math.max(500, 3000 - difficulty * 150);
                         if (!this.lastBlockAdded || currentTime - this.lastBlockAdded > spawnRate) {
@@ -2402,7 +2431,7 @@
                         }
                         
                         // Blocks collision
-                        if (this.mode === 'blocks') {
+                        if (this.mode === 'blocks' || this.mode === 'blocks_multiball') {
                             for (let i = this.blocks.length - 1; i >= 0; i--) {
                                 let blk = this.blocks[i];
                                 if (b.x + halfX > blk.x && b.x - halfX < blk.x + blk.w &&
@@ -2427,6 +2456,7 @@
                                         this.blocks.splice(i, 1);
                                     } else {
                                         blk.el.className = `pong-block hit-${blk.hp}`;
+                                        blk.el.textContent = blk.hp;
                                     }
                                     break;
                                 }
