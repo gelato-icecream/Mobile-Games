@@ -632,6 +632,99 @@
         .dnb-box.player { background: rgba(99, 102, 241, 0.5); }
         .dnb-box.ai { background: rgba(239, 68, 68, 0.5); }
 
+        /* Battleships */
+        .bs-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            width: 100%;
+            max-width: 400px;
+            margin-top: 1rem;
+        }
+        .bs-board-wrapper {
+            background: var(--secondary-color);
+            padding: 10px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .bs-board-title {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--primary-color);
+        }
+        .bs-board {
+            display: grid;
+            grid-template-columns: repeat(11, 1fr);
+            gap: 2px;
+            aspect-ratio: 1;
+        }
+        .bs-coord {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            color: var(--border-color);
+            font-weight: bold;
+        }
+        .bs-legend {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            font-size: 0.8rem;
+            margin-bottom: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .bs-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .bs-legend-dot {
+            width: 12px; height: 12px; border-radius: 50%;
+        }
+        .bs-legend-box {
+            width: 14px; height: 14px; border-radius: 2px; border: 1px solid var(--border-color);
+        }
+        .bs-cell {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 2px;
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .bs-cell.player-ship { background: #64748b; }
+        .bs-cell.hit::after {
+            content: '';
+            width: 60%;
+            height: 60%;
+            background: #ef4444;
+            border-radius: 50%;
+            position: absolute;
+            box-shadow: 0 0 5px #ef4444;
+        }
+        .bs-cell.miss::after {
+            content: '';
+            width: 30%;
+            height: 30%;
+            background: #94a3b8;
+            border-radius: 50%;
+            position: absolute;
+        }
+        .bs-cell.sunk::after {
+            content: '';
+            width: 60%;
+            height: 60%;
+            background: #22c55e;
+            border-radius: 50%;
+            position: absolute;
+            box-shadow: 0 0 5px #22c55e;
+        }
+
         /* Controls */
         .controls {
             margin-top: 2rem;
@@ -704,6 +797,10 @@
             <div class="game-card" onclick="app.showScreen('dnb')">
                 <h2>Dots and Boxes</h2>
                 <p>Complete squares to claim them. The AI uses heuristics to outsmart you!</p>
+            </div>
+            <div class="game-card" onclick="app.showScreen('bs')">
+                <h2>Battleships <span id="bs-new-badge" style="background: #ef4444; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 8px; vertical-align: middle; margin-left: 5px; display: none;">NEW</span></h2>
+                <p>Sink the AI's fleet before it sinks yours. Ships are randomly placed.</p>
             </div>
         </div>
     </div>
@@ -876,6 +973,46 @@
         </div>
     </div>
 
+    <!-- Battleships Screen -->
+    <div id="screen-bs" class="screen">
+        <div class="game-header">
+            <button class="btn-back" onclick="app.showScreen('hub')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                Back
+            </button>
+            <div class="status" id="bs-status" style="font-size: 1.1rem; font-weight: 800;">Your turn</div>
+            <div style="width: 70px;"></div>
+        </div>
+        
+        <div class="bs-container">
+            <div class="bs-legend">
+                <div class="bs-legend-item"><div class="bs-legend-box" style="background: #64748b;"></div> Your Ship</div>
+                <div class="bs-legend-item"><div class="bs-legend-dot" style="background: #94a3b8;"></div> Miss</div>
+                <div class="bs-legend-item"><div class="bs-legend-dot" style="background: #ef4444; box-shadow: 0 0 5px #ef4444;"></div> Hit</div>
+                <div class="bs-legend-item"><div class="bs-legend-dot" style="background: #22c55e; box-shadow: 0 0 5px #22c55e;"></div> Sunk</div>
+            </div>
+            <div class="bs-board-wrapper">
+                <div class="bs-board-title">AI's Board (Attack Here)</div>
+                <div class="bs-board" id="bs-ai-board"></div>
+            </div>
+            
+            <div id="bs-ship-selector" style="display: flex; gap: 0.5rem; justify-content: center; margin-top: 0.5rem; flex-wrap: wrap;"></div>
+            <div class="controls" id="bs-placement-controls" style="display: none; margin-top: 0.5rem; margin-bottom: 0.5rem; gap: 0.5rem; justify-content: center;">
+                <button class="btn" id="bs-rotate-btn" style="padding: 0.6rem 1rem; font-size: 0.9rem; background: var(--secondary-color); color: var(--text-color); border: 1px solid var(--border-color);" onclick="games.bs.toggleRotation()">Rotate: Horizontal</button>
+                <button class="btn" style="padding: 0.6rem 1rem; font-size: 0.9rem;" onclick="games.bs.placeRandomly()">Randomize Fleet</button>
+            </div>
+            
+            <div class="bs-board-wrapper">
+                <div class="bs-board-title">Your Board</div>
+                <div class="bs-board" id="bs-player-board"></div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn" onclick="games.bs.reset()">Restart Game</button>
+        </div>
+    </div>
+
     <script>
         // --- Core Application Logic ---
         const app = {
@@ -900,6 +1037,13 @@
                 games.pong.init();
                 if(games.rps) games.rps.init();
                 if(games.dnb) games.dnb.init();
+                if(games.bs) games.bs.init();
+                
+                // Check new badge for battleships
+                const bsBadge = document.getElementById('bs-new-badge');
+                if (bsBadge && new Date() < new Date('2026-06-23T00:00:00')) {
+                    bsBadge.style.display = 'inline-block';
+                }
             },
 
             showScreen(screenId) {
@@ -918,6 +1062,7 @@
                 if (screenId === 'pong') games.pong.reset();
                 if (screenId === 'rps') games.rps.reset();
                 if (screenId === 'dnb') games.dnb.reset();
+                if (screenId === 'bs') games.bs.reset();
             }
         };
 
@@ -2585,6 +2730,373 @@
                     else if (this.scorePlayer > this.scoreAI) msg = "You Win!";
                     else msg = "It's a Tie!";
                     document.getElementById('dnb-msg').textContent = msg;
+                }
+            },
+
+            // 9. Battleships
+            bs: {
+                size: 10,
+                playerBoard: [], // 0: empty, 1: ship, 2: miss, 3: hit, 4: sunk
+                aiBoard: [],
+                playerFleet: [],
+                aiFleet: [],
+                playerShipsLeft: 0,
+                aiShipsLeft: 0,
+                gameOver: false,
+                currentPlayer: 1, // 1: Player, 2: AI
+                aiLastHits: [],
+                phase: 'placement', // 'placement', 'playing'
+                ships: [],
+                activeShipId: 0,
+                isHorizontal: true,
+
+                init() {
+                    const pb = document.getElementById('bs-player-board');
+                    const ab = document.getElementById('bs-ai-board');
+                    pb.innerHTML = '';
+                    ab.innerHTML = '';
+                    
+                    const cols = ['', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+                    
+                    for (let r = -1; r < this.size; r++) {
+                        for (let c = -1; c < this.size; c++) {
+                            if (r === -1 || c === -1) {
+                                const pCoord = document.createElement('div');
+                                pCoord.className = 'bs-coord';
+                                pCoord.textContent = r === -1 ? cols[c + 1] : (r + 1);
+                                pb.appendChild(pCoord);
+                                
+                                const aCoord = document.createElement('div');
+                                aCoord.className = 'bs-coord';
+                                aCoord.textContent = r === -1 ? cols[c + 1] : (r + 1);
+                                ab.appendChild(aCoord);
+                            } else {
+                                const pCell = document.createElement('div');
+                                pCell.className = 'bs-cell';
+                                pCell.id = `bs-p-${r}-${c}`;
+                                pCell.onclick = () => this.playerBoardClick(r, c);
+                                pb.appendChild(pCell);
+                                
+                                const aCell = document.createElement('div');
+                                aCell.className = 'bs-cell';
+                                aCell.id = `bs-a-${r}-${c}`;
+                                aCell.onclick = () => this.makeMove(r, c);
+                                ab.appendChild(aCell);
+                            }
+                        }
+                    }
+                },
+
+                reset() {
+                    this.playerBoard = Array(this.size).fill(null).map(() => Array(this.size).fill(0));
+                    this.aiBoard = Array(this.size).fill(null).map(() => Array(this.size).fill(0));
+                    this.playerFleet = [];
+                    this.aiFleet = [];
+                    this.gameOver = false;
+                    this.currentPlayer = 1;
+                    this.aiLastHits = [];
+                    
+                    this.phase = 'placement';
+                    this.ships = [
+                        { id: 0, len: 5, placed: false },
+                        { id: 1, len: 4, placed: false },
+                        { id: 2, len: 3, placed: false },
+                        { id: 3, len: 3, placed: false },
+                        { id: 4, len: 2, placed: false }
+                    ];
+                    this.activeShipId = 0;
+                    this.isHorizontal = true;
+                    
+                    document.getElementById('bs-placement-controls').style.display = 'flex';
+                    
+                    this.updateUI();
+                    this.renderShipSelector();
+                    this.updatePlacementStatus();
+                },
+                
+                renderShipSelector() {
+                    const selector = document.getElementById('bs-ship-selector');
+                    selector.innerHTML = '';
+                    if (this.phase !== 'placement') return;
+                    
+                    this.ships.forEach(ship => {
+                        if (!ship.placed) {
+                            const btn = document.createElement('button');
+                            btn.className = 'btn';
+                            btn.style.padding = '0.4rem 0.8rem';
+                            btn.style.fontSize = '0.85rem';
+                            btn.style.borderRadius = '8px';
+                            if (this.activeShipId === ship.id) {
+                                btn.style.background = 'var(--primary-color)';
+                                btn.style.boxShadow = '0 0 8px var(--primary-color)';
+                            } else {
+                                btn.style.background = 'var(--secondary-color)';
+                                btn.style.color = 'var(--text-color)';
+                                btn.style.boxShadow = 'none';
+                            }
+                            btn.textContent = `Len ${ship.len}`;
+                            btn.onclick = () => {
+                                this.activeShipId = ship.id;
+                                this.renderShipSelector();
+                                this.updatePlacementStatus();
+                            };
+                            selector.appendChild(btn);
+                        }
+                    });
+                },
+
+                updatePlacementStatus() {
+                    if (this.phase === 'placement') {
+                        let activeShip = this.ships.find(s => s.id === this.activeShipId);
+                        if (!activeShip) return;
+                        document.getElementById('bs-status').textContent = `Place ship (length ${activeShip.len})`;
+                        document.getElementById('bs-rotate-btn').textContent = `Rotate: ${this.isHorizontal ? 'Horizontal' : 'Vertical'}`;
+                    }
+                },
+
+                toggleRotation() {
+                    this.isHorizontal = !this.isHorizontal;
+                    this.updatePlacementStatus();
+                },
+                
+                placeRandomly() {
+                    if (this.phase !== 'placement') return;
+                    let unplacedLengths = this.ships.filter(s => !s.placed).map(s => s.len);
+                    this.placeShipsRandomly(this.playerBoard, unplacedLengths, this.playerFleet);
+                    this.ships.forEach(s => s.placed = true);
+                    this.startGame();
+                },
+                
+                playerBoardClick(r, c) {
+                    if (this.phase !== 'placement') return;
+                    
+                    let activeShip = this.ships.find(s => s.id === this.activeShipId);
+                    if (!activeShip) return;
+                    
+                    if (this.canPlaceShip(this.playerBoard, r, c, activeShip.len, this.isHorizontal)) {
+                        let coords = [];
+                        for (let i = 0; i < activeShip.len; i++) {
+                            if (this.isHorizontal) {
+                                this.playerBoard[r][c + i] = 1;
+                                coords.push({r: r, c: c + i});
+                            } else {
+                                this.playerBoard[r + i][c] = 1;
+                                coords.push({r: r + i, c: c});
+                            }
+                        }
+                        this.playerFleet.push({len: activeShip.len, coords: coords, sunk: false});
+                        
+                        activeShip.placed = true;
+                        
+                        let nextShip = this.ships.find(s => !s.placed);
+                        if (!nextShip) {
+                            this.startGame();
+                        } else {
+                            this.activeShipId = nextShip.id;
+                            this.updateUI();
+                            this.renderShipSelector();
+                            this.updatePlacementStatus();
+                        }
+                    }
+                },
+                
+                startGame() {
+                    this.phase = 'playing';
+                    document.getElementById('bs-placement-controls').style.display = 'none';
+                    document.getElementById('bs-ship-selector').innerHTML = '';
+                    
+                    this.aiFleet = [];
+                    this.placeShipsRandomly(this.aiBoard, null, this.aiFleet);
+                    
+                    this.playerShipsLeft = this.playerFleet.length;
+                    this.aiShipsLeft = this.aiFleet.length;
+                    
+                    this.updateUI();
+                    document.getElementById('bs-status').textContent = "Your turn (Attack AI)";
+                },
+
+                placeShipsRandomly(board, shipsToPlaceList, fleetArray) {
+                    const ships = shipsToPlaceList || [5, 4, 3, 3, 2];
+                    for (let len of ships) {
+                        let placed = false;
+                        while (!placed) {
+                            let horizontal = Math.random() > 0.5;
+                            let r = Math.floor(Math.random() * this.size);
+                            let c = Math.floor(Math.random() * this.size);
+                            
+                            if (this.canPlaceShip(board, r, c, len, horizontal)) {
+                                let coords = [];
+                                for (let i = 0; i < len; i++) {
+                                    if (horizontal) {
+                                        board[r][c + i] = 1;
+                                        coords.push({r: r, c: c + i});
+                                    } else {
+                                        board[r + i][c] = 1;
+                                        coords.push({r: r + i, c: c});
+                                    }
+                                }
+                                fleetArray.push({len: len, coords: coords, sunk: false});
+                                placed = true;
+                            }
+                        }
+                    }
+                },
+
+                canPlaceShip(board, r, c, len, horizontal) {
+                    if (horizontal) {
+                        if (c + len > this.size) return false;
+                        for (let i = 0; i < len; i++) {
+                            if (board[r][c + i] !== 0) return false;
+                        }
+                    } else {
+                        if (r + len > this.size) return false;
+                        for (let i = 0; i < len; i++) {
+                            if (board[r + i][c] !== 0) return false;
+                        }
+                    }
+                    return true;
+                },
+
+                checkSunk(board, fleet, r, c) {
+                    let hitShip = null;
+                    for (let ship of fleet) {
+                        if (ship.coords.some(coord => coord.r === r && coord.c === c)) {
+                            hitShip = ship;
+                            break;
+                        }
+                    }
+                    if (hitShip) {
+                        let isSunk = hitShip.coords.every(coord => board[coord.r][coord.c] >= 3);
+                        if (isSunk) {
+                            hitShip.sunk = true;
+                            for (let coord of hitShip.coords) {
+                                board[coord.r][coord.c] = 4;
+                            }
+                            return true;
+                        }
+                    }
+                    return false;
+                },
+
+                makeMove(r, c) {
+                    if (this.phase !== 'playing' || this.gameOver || this.currentPlayer !== 1) return;
+                    if (this.aiBoard[r][c] >= 2) return; // already hit
+                    
+                    if (this.aiBoard[r][c] === 1) {
+                        this.aiBoard[r][c] = 3; // hit
+                        if (this.checkSunk(this.aiBoard, this.aiFleet, r, c)) {
+                            this.aiShipsLeft--;
+                        }
+                    } else {
+                        this.aiBoard[r][c] = 2; // miss
+                    }
+                    
+                    this.updateUI();
+                    
+                    if (this.aiShipsLeft <= 0) {
+                        this.endGame("You won!");
+                        return;
+                    }
+                    
+                    this.currentPlayer = 2;
+                    document.getElementById('bs-status').textContent = "AI is thinking...";
+                    setTimeout(() => this.makeAIMove(), 500);
+                },
+
+                makeAIMove() {
+                    if (this.gameOver) return;
+                    
+                    let r, c;
+                    let validTarget = false;
+                    
+                    if (this.aiLastHits.length > 0) {
+                        let lastHit = this.aiLastHits[this.aiLastHits.length - 1];
+                        const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+                        
+                        for (let i = dirs.length - 1; i > 0; i--) {
+                            const j = Math.floor(Math.random() * (i + 1));
+                            [dirs[i], dirs[j]] = [dirs[j], dirs[i]];
+                        }
+                        
+                        for (let [dr, dc] of dirs) {
+                            let nr = lastHit.r + dr, nc = lastHit.c + dc;
+                            if (nr >= 0 && nr < this.size && nc >= 0 && nc < this.size) {
+                                if (this.playerBoard[nr][nc] === 0 || this.playerBoard[nr][nc] === 1) {
+                                    r = nr; c = nc;
+                                    validTarget = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (!validTarget) {
+                        while (!validTarget) {
+                            r = Math.floor(Math.random() * this.size);
+                            c = Math.floor(Math.random() * this.size);
+                            if (this.playerBoard[r][c] === 0 || this.playerBoard[r][c] === 1) {
+                                validTarget = true;
+                            }
+                        }
+                    }
+                    
+                    if (this.playerBoard[r][c] === 1) {
+                        this.playerBoard[r][c] = 3;
+                        if (this.checkSunk(this.playerBoard, this.playerFleet, r, c)) {
+                            this.playerShipsLeft--;
+                            this.aiLastHits = [];
+                        } else {
+                            this.aiLastHits.push({r, c});
+                        }
+                    } else {
+                        this.playerBoard[r][c] = 2;
+                    }
+                    
+                    if (this.aiLastHits.length > 0 && !validTarget && this.playerBoard[r][c] === 2) {
+                        this.aiLastHits.pop(); 
+                    }
+                    
+                    this.updateUI();
+                    
+                    if (this.playerShipsLeft <= 0) {
+                        this.endGame("AI won!");
+                        return;
+                    }
+                    
+                    this.currentPlayer = 1;
+                    document.getElementById('bs-status').textContent = "Your turn";
+                },
+
+                updateUI() {
+                    for (let r = 0; r < this.size; r++) {
+                        for (let c = 0; c < this.size; c++) {
+                            const pCell = document.getElementById(`bs-p-${r}-${c}`);
+                            pCell.className = 'bs-cell';
+                            if (this.playerBoard[r][c] === 1) pCell.classList.add('player-ship');
+                            if (this.playerBoard[r][c] === 2) pCell.classList.add('miss');
+                            if (this.playerBoard[r][c] === 3) pCell.classList.add('hit', 'player-ship');
+                            if (this.playerBoard[r][c] === 4) pCell.classList.add('sunk', 'player-ship');
+                            
+                            const aCell = document.getElementById(`bs-a-${r}-${c}`);
+                            aCell.className = 'bs-cell';
+                            if (this.aiBoard[r][c] === 2) aCell.classList.add('miss');
+                            if (this.aiBoard[r][c] === 3) aCell.classList.add('hit');
+                            if (this.aiBoard[r][c] === 4) aCell.classList.add('sunk');
+                        }
+                    }
+                },
+
+                endGame(msg) {
+                    this.gameOver = true;
+                    document.getElementById('bs-status').textContent = msg;
+                    for (let r = 0; r < this.size; r++) {
+                        for (let c = 0; c < this.size; c++) {
+                            if (this.aiBoard[r][c] === 1) {
+                                const aCell = document.getElementById(`bs-a-${r}-${c}`);
+                                aCell.classList.add('player-ship');
+                            }
+                        }
+                    }
                 }
             }
         };
