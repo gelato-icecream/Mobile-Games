@@ -2002,26 +2002,28 @@
                     this.ball.x += this.ball.vx * dt * this.ballSpeedMultiplier;
                     this.ball.y += this.ball.vy * dt * this.ballSpeedMultiplier;
 
+                    const halfX = this.ball.size / 2;
+                    const halfY = (this.ball.size * (2/3)) / 2;
+
                     // Wall collisions (left/right)
-                    if (this.ball.x <= 0) {
-                        this.ball.x = 0;
+                    if (this.ball.x <= halfX) {
+                        this.ball.x = halfX;
                         this.ball.vx *= -1;
-                    } else if (this.ball.x >= 100 - this.ball.size) {
-                        this.ball.x = 100 - this.ball.size;
+                    } else if (this.ball.x >= 100 - halfX) {
+                        this.ball.x = 100 - halfX;
                         this.ball.vx *= -1;
                     }
 
                     // Paddle collision
                     // Note: aspect ratio is 2/3. So Y axis is 1.5x longer physically than X axis.
                     // This means a 4% X size ball is 2.66% Y size.
-                    const ballYSize = this.ball.size * (2/3);
                     const paddleHeight = 3; 
 
                     // AI paddle (Top: 5%)
                     const aiBottom = 5 + paddleHeight;
-                    if (this.ball.y <= aiBottom && this.ball.vy < 0) {
-                        if (this.ball.x + this.ball.size >= this.aiX && this.ball.x <= this.aiX + this.paddleWidth) {
-                            this.ball.y = aiBottom;
+                    if (this.ball.y - halfY <= aiBottom && this.ball.vy < 0) {
+                        if (this.ball.x + halfX >= this.aiX && this.ball.x - halfX <= this.aiX + this.paddleWidth) {
+                            this.ball.y = aiBottom + halfY;
                             this.ball.vy *= -1;
                             let hitPos = (this.ball.x - this.aiX) / this.paddleWidth;
                             this.ball.vx = (hitPos - 0.5) * 60;
@@ -2029,11 +2031,11 @@
                         }
                     }
 
-                    // Player paddle (Bottom: 95% from top minus height)
-                    const playerTop = 95 - paddleHeight - ballYSize; 
-                    if (this.ball.y >= playerTop && this.ball.vy > 0) {
-                        if (this.ball.x + this.ball.size >= this.playerX && this.ball.x <= this.playerX + this.paddleWidth) {
-                            this.ball.y = playerTop;
+                    // Player paddle (Bottom: 5% from bottom, height: 3% -> top: 92%)
+                    const playerTop = 95 - paddleHeight; 
+                    if (this.ball.y + halfY >= playerTop && this.ball.vy > 0) {
+                        if (this.ball.x + halfX >= this.playerX && this.ball.x - halfX <= this.playerX + this.paddleWidth) {
+                            this.ball.y = playerTop - halfY;
                             this.ball.vy *= -1;
                             let hitPos = (this.ball.x - this.playerX) / this.paddleWidth;
                             this.ball.vx = (hitPos - 0.5) * 60;
