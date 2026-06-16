@@ -2984,11 +2984,33 @@
                 playerBoardClick(r, c) {
                     if (this.phase !== 'placement' && this.phase !== 'p1_placement' && this.phase !== 'p2_placement') return;
                     
-                    let activeShip = this.ships.find(s => s.id === this.activeShipId);
-                    if (!activeShip) return;
-                    
                     let targetBoard = (this.phase === 'p2_placement') ? this.aiBoard : this.playerBoard;
                     let targetFleet = (this.phase === 'p2_placement') ? this.aiFleet : this.playerFleet;
+                    
+                    if (targetBoard[r][c] === 1) {
+                        let shipIndex = targetFleet.findIndex(ship => ship.coords.some(coord => coord.r === r && coord.c === c));
+                        if (shipIndex !== -1) {
+                            let shipToRemove = targetFleet[shipIndex];
+                            shipToRemove.coords.forEach(coord => {
+                                targetBoard[coord.r][coord.c] = 0;
+                            });
+                            targetFleet.splice(shipIndex, 1);
+                            
+                            let shipDef = this.ships.find(s => s.placed && s.len === shipToRemove.len);
+                            if (shipDef) {
+                                shipDef.placed = false;
+                                this.activeShipId = shipDef.id;
+                            }
+                            
+                            this.updateUI();
+                            this.renderShipSelector();
+                            this.updatePlacementStatus();
+                            return;
+                        }
+                    }
+                    
+                    let activeShip = this.ships.find(s => s.id === this.activeShipId);
+                    if (!activeShip || activeShip.placed) return;
                     
                     if (this.canPlaceShip(targetBoard, r, c, activeShip.len, this.isHorizontal)) {
                         let coords = [];
