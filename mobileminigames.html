@@ -7,12 +7,18 @@
     <style>
         :root {
             --bg-color: #0f172a;
-            --bg-overlay: rgba(15, 23, 42, 0.85);
+            --surface-color: #1e293b;
+            --primary-color: #3b82f6;
+            --primary-hover: #2563eb;
+            --secondary-color: #334155;
+            --secondary-hover: #475569;
             --text-color: #f8fafc;
-            --primary-color: #6366f1;
-            --primary-hover: #4f46e5;
-            --secondary-color: #1e293b;
+            --text-muted: #94a3b8;
             --border-color: #334155;
+            --danger-color: #ef4444;
+            --success-color: #22c55e;
+            --warning-color: #eab308;
+            --neon-glow: 0 0 10px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.3);
             --accent-x: #ef4444;
             --accent-o: #3b82f6;
             --accent-c4-1: #ef4444; /* Red */
@@ -21,16 +27,17 @@
             --glass-border: rgba(255, 255, 255, 0.1);
         }
 
-        [data-theme="light"] {
-            --bg-color: #f1f5f9;
-            --bg-overlay: rgba(241, 245, 249, 0.85);
+        body.light-mode {
+            --bg-color: #f8fafc;
+            --surface-color: #ffffff;
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --secondary-color: #e2e8f0;
+            --secondary-hover: #cbd5e1;
             --text-color: #0f172a;
-            --primary-color: #4f46e5;
-            --primary-hover: #4338ca;
-            --secondary-color: #ffffff;
+            --text-muted: #64748b;
             --border-color: #cbd5e1;
-            --glass-bg: rgba(255, 255, 255, 0.8);
-            --glass-border: rgba(0, 0, 0, 0.1);
+            --neon-glow: 0 0 10px rgba(37, 99, 235, 0.2), 0 0 20px rgba(37, 99, 235, 0.1);
         }
 
         * {
@@ -765,6 +772,11 @@
 
     <!-- Hub Screen -->
     <div id="screen-hub" class="screen active">
+        <div class="header" style="position: relative; width: 100%; text-align: center;">
+            <h1 style="background: none; -webkit-text-fill-color: var(--text-color);">MiniGames</h1>
+            <p style="color: var(--text-muted); margin-top: 0.5rem; margin-bottom: 1rem;">Select a game to play</p>
+            <button class="btn" style="position: absolute; top: 0; right: 0; padding: 0.5rem 0.8rem; background: var(--surface-color); border: 1px solid var(--border-color);" onclick="app.showScreen('settings')">⚙️</button>
+        </div>
         <div class="game-list">
             <div class="game-card" onclick="app.showScreen('ttt')">
                 <h2>Tic Tac Toe</h2>
@@ -801,6 +813,36 @@
             <div class="game-card" onclick="app.showScreen('bs')">
                 <h2>Battleships <span id="bs-new-badge" style="background: #ef4444; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 8px; vertical-align: middle; margin-left: 5px; display: none;">NEW</span></h2>
                 <p>Sink the AI's fleet before it sinks yours. Ships are randomly placed.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Screen -->
+    <div id="screen-settings" class="screen">
+        <div class="game-header">
+            <button class="btn-back" onclick="app.showScreen('hub')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                Back
+            </button>
+            <div class="status" style="font-size: 1.2rem; font-weight: 800;">Settings</div>
+            <div style="width: 70px;"></div>
+        </div>
+        
+        <div class="game-container" style="display: flex; flex-direction: column; gap: 1.5rem; max-width: 400px; margin: 0 auto; margin-top: 2rem; width: 100%;">
+            <div class="setting-item" style="display: flex; justify-content: space-between; align-items: center; background: var(--surface-color); padding: 1rem; border-radius: 12px; border: 1px solid var(--border-color);">
+                <div style="font-weight: 600;">Theme</div>
+                <select id="settings-theme" class="btn" style="background: var(--bg-color); border: 1px solid var(--border-color); padding: 0.5rem; color: var(--text-color);" onchange="app.toggleTheme(this.value)">
+                    <option value="dark">Dark Mode</option>
+                    <option value="light">Light Mode</option>
+                </select>
+            </div>
+            
+            <div class="setting-item" style="display: flex; justify-content: space-between; align-items: center; background: var(--surface-color); padding: 1rem; border-radius: 12px; border: 1px solid var(--border-color);">
+                <div style="font-weight: 600;">Game Mode (Global)</div>
+                <select id="settings-game-mode" class="btn" style="background: var(--bg-color); border: 1px solid var(--border-color); padding: 0.5rem; color: var(--text-color);" onchange="app.setGameMode(this.value)">
+                    <option value="1p">1 Player (vs AI)</option>
+                    <option value="2p">2 Players (Local)</option>
+                </select>
             </div>
         </div>
     </div>
@@ -984,6 +1026,11 @@
             <div style="width: 70px;"></div>
         </div>
         
+        <div id="bs-pass-overlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 100; flex-direction: column; align-items: center; justify-content: center; gap: 2rem;">
+            <h2 id="bs-pass-text" style="font-size: 2rem; color: var(--text-color); text-align: center;">Pass Device to Player 2</h2>
+            <button class="btn" id="bs-pass-btn" style="font-size: 1.2rem; padding: 1rem 2rem;" onclick="games.bs.resumeTurn()">I'm Ready</button>
+        </div>
+        
         <div class="bs-container">
             <div class="bs-legend">
                 <div class="bs-legend-item"><div class="bs-legend-box" style="background: #64748b;"></div> Your Ship</div>
@@ -992,7 +1039,7 @@
                 <div class="bs-legend-item"><div class="bs-legend-dot" style="background: #22c55e; box-shadow: 0 0 5px #22c55e;"></div> Sunk</div>
             </div>
             <div class="bs-board-wrapper">
-                <div class="bs-board-title">AI's Board (Attack Here)</div>
+                <div class="bs-board-title" id="bs-top-board-title">AI's Board (Attack Here)</div>
                 <div class="bs-board" id="bs-ai-board"></div>
             </div>
             
@@ -1003,7 +1050,7 @@
             </div>
             
             <div class="bs-board-wrapper">
-                <div class="bs-board-title">Your Board</div>
+                <div class="bs-board-title" id="bs-bottom-board-title">Your Board</div>
                 <div class="bs-board" id="bs-player-board"></div>
             </div>
         </div>
@@ -1014,19 +1061,32 @@
     </div>
 
     <script>
-        // --- Core Application Logic ---
         const app = {
-            currentScreen: 'hub',
-            theme: 'dark',
+            activeScreen: 'hub',
+            settings: {
+                theme: 'dark',
+                gameMode: '1p'
+            },
+            
+            toggleTheme(mode) {
+                this.settings.theme = mode;
+                if (mode === 'light') document.body.classList.add('light-mode');
+                else document.body.classList.remove('light-mode');
+                document.getElementById('theme-toggle').textContent = mode === 'dark' ? '🌙' : '☀️';
+            },
+            
+            setGameMode(mode) {
+                this.settings.gameMode = mode;
+            },
             
             init() {
                 // Theme setup
                 const toggleBtn = document.getElementById('theme-toggle');
-                toggleBtn.addEventListener('click', () => {
-                    this.theme = this.theme === 'dark' ? 'light' : 'dark';
-                    document.documentElement.setAttribute('data-theme', this.theme);
-                    toggleBtn.textContent = this.theme === 'dark' ? '🌙' : '☀️';
-                });
+                if (toggleBtn) {
+                    toggleBtn.addEventListener('click', () => {
+                        this.toggleTheme(this.settings.theme === 'dark' ? 'light' : 'dark');
+                    });
+                }
 
                 // Initialize games
                 games.ttt.init();
@@ -1090,31 +1150,37 @@
                     this.currentPlayer = 'X';
                     this.gameOver = false;
                     this.updateUI();
-                    document.getElementById('ttt-status').textContent = "Your turn (X)";
+                    document.getElementById('ttt-status').textContent = app.settings.gameMode === '1p' ? "Your turn (X)" : "Player 1's turn (X)";
                 },
 
                 makeMove(idx) {
-                    if (this.board[idx] || this.gameOver || this.currentPlayer !== 'X') return;
+                    if (this.board[idx] || this.gameOver) return;
+                    if (app.settings.gameMode === '1p' && this.currentPlayer !== 'X') return;
                     
-                    this.board[idx] = 'X';
+                    this.board[idx] = this.currentPlayer;
                     this.updateUI();
                     
-                    if (this.checkWin(this.board, 'X')) {
-                        this.endGame("You won!");
+                    if (this.checkWin(this.board, this.currentPlayer)) {
+                        let msg = app.settings.gameMode === '1p' ? "You won!" : `Player ${this.currentPlayer === 'X' ? 1 : 2} won!`;
+                        this.endGame(msg);
                         return;
                     } else if (this.board.every(c => c !== null)) {
                         this.endGame("Draw!");
                         return;
                     }
 
-                    this.currentPlayer = 'O';
-                    document.getElementById('ttt-status').textContent = "AI is thinking...";
+                    this.currentPlayer = this.currentPlayer === 'X' ? 'O' : 'X';
                     
-                    setTimeout(() => this.makeAIMove(), 400);
+                    if (app.settings.gameMode === '1p' && this.currentPlayer === 'O') {
+                        document.getElementById('ttt-status').textContent = "AI is thinking...";
+                        setTimeout(() => this.makeAIMove(), 400);
+                    } else {
+                        document.getElementById('ttt-status').textContent = app.settings.gameMode === '1p' ? "Your turn (X)" : `Player ${this.currentPlayer === 'X' ? 1 : 2}'s turn (${this.currentPlayer})`;
+                    }
                 },
 
                 makeAIMove() {
-                    if (this.gameOver) return;
+                    if (this.gameOver || app.settings.gameMode !== '1p') return;
                     
                     let bestScore = -Infinity;
                     let move;
@@ -1139,7 +1205,7 @@
                         this.endGame("Draw!");
                     } else {
                         this.currentPlayer = 'X';
-                        document.getElementById('ttt-status').textContent = "Your turn (X)";
+                        document.getElementById('ttt-status').textContent = app.settings.gameMode === '1p' ? "Your turn (X)" : "Player 1's turn (X)";
                     }
                 },
 
@@ -1235,30 +1301,36 @@
                             piece.style.top = '-120%';
                         }
                     }
-                    document.getElementById('c4-status').textContent = "Your turn (Red)";
+                    document.getElementById('c4-status').textContent = app.settings.gameMode === '1p' ? "Your turn (Red)" : "Player 1's turn (Red)";
                 },
 
                 makeMove(col) {
-                    if (this.gameOver || this.currentPlayer !== 1) return;
+                    if (this.gameOver) return;
+                    if (app.settings.gameMode === '1p' && this.currentPlayer !== 1) return;
                     
                     const row = this.getAvailableRow(this.board, col);
                     if (row === -1) return; // Column full
                     
-                    this.board[row][col] = 1;
-                    this.animatePiece(row, col, 1);
+                    this.board[row][col] = this.currentPlayer;
+                    this.animatePiece(row, col, this.currentPlayer);
                     
-                    if (this.checkWin(this.board, 1)) {
-                        this.endGame("You won!");
+                    if (this.checkWin(this.board, this.currentPlayer)) {
+                        let msg = app.settings.gameMode === '1p' ? "You won!" : `Player ${this.currentPlayer} won!`;
+                        this.endGame(msg);
                         return;
                     } else if (this.isBoardFull(this.board)) {
                         this.endGame("Draw!");
                         return;
                     }
 
-                    this.currentPlayer = 2;
-                    document.getElementById('c4-status').textContent = "AI is thinking...";
+                    this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
                     
-                    setTimeout(() => this.makeAIMove(), 600);
+                    if (app.settings.gameMode === '1p' && this.currentPlayer === 2) {
+                        document.getElementById('c4-status').textContent = "AI is thinking...";
+                        setTimeout(() => this.makeAIMove(), 600);
+                    } else {
+                        document.getElementById('c4-status').textContent = app.settings.gameMode === '1p' ? "Your turn (Red)" : `Player ${this.currentPlayer}'s turn (${this.currentPlayer === 1 ? 'Red' : 'Yellow'})`;
+                    }
                 },
 
                 getAvailableRow(board, col) {
@@ -1269,7 +1341,7 @@
                 },
 
                 makeAIMove() {
-                    if (this.gameOver) return;
+                    if (this.gameOver || app.settings.gameMode !== '1p') return;
                     
                     let bestScore = -Infinity;
                     let bestCol = -1;
@@ -1336,7 +1408,7 @@
                         this.endGame("Draw!");
                     } else {
                         this.currentPlayer = 1;
-                        document.getElementById('c4-status').textContent = "Your turn (Red)";
+                        document.getElementById('c4-status').textContent = app.settings.gameMode === '1p' ? "Your turn (Red)" : "Player 1's turn (Red)";
                     }
                 },
 
@@ -1464,30 +1536,36 @@
                     this.currentPlayer = 'X';
                     this.gameOver = false;
                     this.updateUI();
-                    document.getElementById('uttt-status').textContent = "Your turn (X)";
+                    document.getElementById('uttt-status').textContent = app.settings.gameMode === '1p' ? "Your turn (X)" : "Player 1's turn (X)";
                 },
 
                 makeMove(mb, c) {
-                    if (this.gameOver || this.currentPlayer !== 'X') return;
+                    if (this.gameOver) return;
+                    if (app.settings.gameMode === '1p' && this.currentPlayer !== 'X') return;
                     if (this.mainBoard[mb] !== null) return; // sub-board already won/drawn
                     if (this.board[mb][c] !== null) return; // cell taken
                     if (this.activeBoard !== -1 && this.activeBoard !== mb) return; // wrong sub-board
 
-                    this.executeMove(mb, c, 'X');
+                    this.executeMove(mb, c, this.currentPlayer);
 
-                    if (this.checkWin(this.mainBoard, 'X')) {
-                        this.endGame("You won the Ultimate Game!");
+                    if (this.checkWin(this.mainBoard, this.currentPlayer)) {
+                        let msg = app.settings.gameMode === '1p' ? "You won the Ultimate Game!" : `Player ${this.currentPlayer === 'X' ? 1 : 2} won!`;
+                        this.endGame(msg);
                         return;
                     } else if (this.mainBoard.every(b => b !== null)) {
                         this.endGame("Ultimate Draw!");
                         return;
                     }
 
-                    this.currentPlayer = 'O';
+                    this.currentPlayer = this.currentPlayer === 'X' ? 'O' : 'X';
                     this.updateUI();
-                    document.getElementById('uttt-status').textContent = "AI is thinking...";
                     
-                    setTimeout(() => this.makeAIMove(), 500);
+                    if (app.settings.gameMode === '1p' && this.currentPlayer === 'O') {
+                        document.getElementById('uttt-status').textContent = "AI is thinking...";
+                        setTimeout(() => this.makeAIMove(), 500);
+                    } else {
+                        document.getElementById('uttt-status').textContent = app.settings.gameMode === '1p' ? "Your turn (X)" : `Player ${this.currentPlayer === 'X' ? 1 : 2}'s turn (${this.currentPlayer})`;
+                    }
                 },
 
                 executeMove(mb, c, player) {
@@ -1507,7 +1585,7 @@
                 },
 
                 makeAIMove() {
-                    if (this.gameOver) return;
+                    if (this.gameOver || app.settings.gameMode !== '1p') return;
                     
                     let validMoves = [];
                     let boardsToCheck = this.activeBoard === -1 ? [0,1,2,3,4,5,6,7,8] : [this.activeBoard];
@@ -1533,7 +1611,7 @@
                         } else {
                             this.currentPlayer = 'X';
                             this.updateUI();
-                            document.getElementById('uttt-status').textContent = "Your turn (X)";
+                            document.getElementById('uttt-status').textContent = app.settings.gameMode === '1p' ? "Your turn (X)" : "Player 1's turn (X)";
                         }
                     }
                 },
@@ -1607,7 +1685,7 @@
                         if (this.mainBoard[mb] === 'X') subBoardEl.classList.add('won-x');
                         else if (this.mainBoard[mb] === 'O') subBoardEl.classList.add('won-o');
                         else if (this.mainBoard[mb] === 'D') subBoardEl.classList.add('draw');
-                        else if ((this.activeBoard === -1 || this.activeBoard === mb) && !this.gameOver && this.currentPlayer === 'X') {
+                        else if ((this.activeBoard === -1 || this.activeBoard === mb) && !this.gameOver && (app.settings.gameMode === '2p' || this.currentPlayer === 'X')) {
                             subBoardEl.classList.add('active');
                         }
 
@@ -1653,7 +1731,7 @@
                     this.currentPlayer = 'B';
                     this.gameOver = false;
                     this.updateUI();
-                    document.getElementById('othello-status').textContent = "Your turn (Black)";
+                    document.getElementById('othello-status').textContent = app.settings.gameMode === '1p' ? "Your turn (Black)" : "Player 1's turn (Black)";
                 },
                 getValidMoves(player) {
                     let moves = [];
@@ -1684,12 +1762,14 @@
                     return flips;
                 },
                 makeMove(r, c) {
-                    if (this.gameOver || this.currentPlayer !== 'B') return;
-                    let flips = this.getFlips(r, c, 'B');
+                    if (this.gameOver) return;
+                    if (app.settings.gameMode === '1p' && this.currentPlayer !== 'B') return;
+                    
+                    let flips = this.getFlips(r, c, this.currentPlayer);
                     if (flips.length === 0) return;
                     
-                    this.board[r][c] = 'B';
-                    for (let f of flips) this.board[f.r][f.c] = 'B';
+                    this.board[r][c] = this.currentPlayer;
+                    for (let f of flips) this.board[f.r][f.c] = this.currentPlayer;
                     
                     this.checkGameState();
                 },
@@ -1710,15 +1790,15 @@
                     this.currentPlayer = nextPlayer;
                     this.updateUI();
                     
-                    if (this.currentPlayer === 'W') {
+                    if (app.settings.gameMode === '1p' && this.currentPlayer === 'W') {
                         document.getElementById('othello-status').textContent = "AI is thinking...";
                         setTimeout(() => this.makeAIMove(), 500);
                     } else {
-                        document.getElementById('othello-status').textContent = "Your turn (Black)";
+                        document.getElementById('othello-status').textContent = app.settings.gameMode === '1p' ? "Your turn (Black)" : `Player ${this.currentPlayer === 'B' ? 1 : 2}'s turn (${this.currentPlayer === 'B' ? 'Black' : 'White'})`;
                     }
                 },
                 makeAIMove() {
-                    if(this.gameOver) return;
+                    if(this.gameOver || app.settings.gameMode !== '1p') return;
                     let moves = this.getValidMoves('W');
                     if(moves.length === 0) { this.checkGameState(); return; }
                     
@@ -1751,7 +1831,7 @@
                     this.checkGameState();
                 },
                 updateUI() {
-                    let validMoves = this.currentPlayer === 'B' && !this.gameOver ? this.getValidMoves('B') : [];
+                    let validMoves = (app.settings.gameMode === '2p' || this.currentPlayer === 'B') && !this.gameOver ? this.getValidMoves(this.currentPlayer) : [];
                     for (let r = 0; r < 8; r++) {
                         for (let c = 0; c < 8; c++) {
                             const cell = document.getElementById(`oth-c-${r}-${c}`);
@@ -1841,7 +1921,7 @@
                     bg.appendChild(inter);
                     
                     this.updateUI();
-                    document.getElementById('go-status').textContent = "Your turn (Black)";
+                    document.getElementById('go-status').textContent = app.settings.gameMode === '1p' ? "Your turn (Black)" : "Player 1's turn (Black)";
                 },
                 getHoshis() {
                     if (this.size === 9) return [[2,2], [2,6], [6,2], [6,6], [4,4]];
@@ -1850,28 +1930,40 @@
                     return [];
                 },
                 pass() {
-                    if(this.gameOver || this.currentPlayer !== 'B') return;
+                    if(this.gameOver) return;
+                    if(app.settings.gameMode === '1p' && this.currentPlayer !== 'B') return;
                     this.passes++;
                     this.history.push(null);
                     if(this.passes >= 2) {
                         this.endGame();
                         return;
                     }
-                    this.currentPlayer = 'W';
+                    this.currentPlayer = this.currentPlayer === 'B' ? 'W' : 'B';
                     this.updateUI();
-                    document.getElementById('go-status').textContent = "AI is thinking...";
-                    setTimeout(() => this.makeAIMove(), 500);
-                },
-                makeMove(r, c) {
-                    if (this.gameOver || this.currentPlayer !== 'B') return;
-                    if (this.board[r][c] !== null) return;
                     
-                    if (this.playStone(r, c, 'B')) {
-                        this.passes = 0;
-                        this.currentPlayer = 'W';
-                        this.updateUI();
+                    if (app.settings.gameMode === '1p' && this.currentPlayer === 'W') {
                         document.getElementById('go-status').textContent = "AI is thinking...";
                         setTimeout(() => this.makeAIMove(), 500);
+                    } else {
+                        document.getElementById('go-status').textContent = app.settings.gameMode === '1p' ? "Your turn (Black)" : `Player ${this.currentPlayer === 'B' ? 1 : 2}'s turn (${this.currentPlayer === 'B' ? 'Black' : 'White'})`;
+                    }
+                },
+                makeMove(r, c) {
+                    if (this.gameOver) return;
+                    if (app.settings.gameMode === '1p' && this.currentPlayer !== 'B') return;
+                    if (this.board[r][c] !== null) return;
+                    
+                    if (this.playStone(r, c, this.currentPlayer)) {
+                        this.passes = 0;
+                        this.currentPlayer = this.currentPlayer === 'B' ? 'W' : 'B';
+                        this.updateUI();
+                        
+                        if (app.settings.gameMode === '1p' && this.currentPlayer === 'W') {
+                            document.getElementById('go-status').textContent = "AI is thinking...";
+                            setTimeout(() => this.makeAIMove(), 500);
+                        } else {
+                            document.getElementById('go-status').textContent = app.settings.gameMode === '1p' ? "Your turn (Black)" : `Player ${this.currentPlayer === 'B' ? 1 : 2}'s turn (${this.currentPlayer === 'B' ? 'Black' : 'White'})`;
+                        }
                     }
                 },
                 playStone(r, c, player) {
@@ -1940,7 +2032,7 @@
                     return libs.size;
                 },
                 makeAIMove() {
-                    if(this.gameOver) return;
+                    if(this.gameOver || app.settings.gameMode !== '1p') return;
                     
                     let validMoves = [];
                     let wStonesOld = 0, bStonesOld = 0;
@@ -2003,7 +2095,7 @@
                         else {
                             this.currentPlayer = 'B';
                             this.updateUI();
-                            document.getElementById('go-status').textContent = "AI Passed. Your turn (Black)";
+                            document.getElementById('go-status').textContent = app.settings.gameMode === '1p' ? "AI Passed. Your turn (Black)" : "Player 1's turn (Black)";
                         }
                         return;
                     }
@@ -2014,7 +2106,7 @@
                     this.passes = 0;
                     this.currentPlayer = 'B';
                     this.updateUI();
-                    document.getElementById('go-status').textContent = "Your turn (Black)";
+                    document.getElementById('go-status').textContent = app.settings.gameMode === '1p' ? "Your turn (Black)" : "Player 1's turn (Black)";
                 },
                 updateUI() {
                     for(let r=0; r<this.size; r++) {
@@ -2518,7 +2610,7 @@
                     
                     this.renderBoard();
                     this.updateScore();
-                    document.getElementById('dnb-msg').textContent = "Your turn (Blue)";
+                    document.getElementById('dnb-msg').textContent = app.settings.gameMode === '1p' ? "Your turn (Blue)" : "Player 1's turn (Blue)";
                 },
                 
                 renderBoard() {
@@ -2578,11 +2670,12 @@
                 },
                 
                 makeMove(type, r, c) {
-                    if (this.gameOver || this.currentPlayer !== 1) return;
+                    if (this.gameOver) return;
+                    if (app.settings.gameMode === '1p' && this.currentPlayer !== 1) return;
                     if (type === 'h' && this.hLines[r][c] !== 0) return;
                     if (type === 'v' && this.vLines[r][c] !== 0) return;
                     
-                    this.executeMove(type, r, c, 1);
+                    this.executeMove(type, r, c, this.currentPlayer);
                 },
                 
                 executeMove(type, r, c, player) {
@@ -2602,16 +2695,16 @@
                     }
                     
                     if (boxesClaimed > 0) {
-                        if (player === 2) {
+                        if (app.settings.gameMode === '1p' && player === 2) {
                             setTimeout(() => this.makeAIMove(), 600);
                         }
                     } else {
                         this.currentPlayer = player === 1 ? 2 : 1;
-                        if (this.currentPlayer === 2) {
+                        if (app.settings.gameMode === '1p' && this.currentPlayer === 2) {
                             document.getElementById('dnb-msg').textContent = "AI is thinking...";
                             setTimeout(() => this.makeAIMove(), 600);
                         } else {
-                            document.getElementById('dnb-msg').textContent = "Your turn (Blue)";
+                            document.getElementById('dnb-msg').textContent = app.settings.gameMode === '1p' ? "Your turn (Blue)" : `Player ${this.currentPlayer}'s turn (${this.currentPlayer === 1 ? 'Blue' : 'Red'})`;
                         }
                     }
                 },
@@ -2639,7 +2732,7 @@
                 },
                 
                 makeAIMove() {
-                    if (this.gameOver) return;
+                    if (this.gameOver || app.settings.gameMode !== '1p') return;
                     
                     let possibleMoves = [];
                     for (let r = 0; r <= this.size; r++) {
@@ -2796,7 +2889,31 @@
                     this.currentPlayer = 1;
                     this.aiLastHits = [];
                     
-                    this.phase = 'placement';
+                    if (app.settings.gameMode === '1p') {
+                        this.phase = 'placement';
+                        this.initShips();
+                        document.getElementById('bs-placement-controls').style.display = 'flex';
+                        document.getElementById('bs-top-board-title').textContent = "AI's Board (Attack Here)";
+                        document.getElementById('bs-bottom-board-title').textContent = "Your Board";
+                        document.getElementById('bs-ai-board').style.opacity = '1';
+                        this.updateUI();
+                        this.renderShipSelector();
+                        this.updatePlacementStatus();
+                    } else {
+                        // 2 Player mode
+                        this.phase = 'p1_placement';
+                        this.initShips();
+                        document.getElementById('bs-placement-controls').style.display = 'flex';
+                        document.getElementById('bs-top-board-title').textContent = "Player 2's Board";
+                        document.getElementById('bs-bottom-board-title').textContent = "Player 1's Fleet";
+                        document.getElementById('bs-ai-board').style.opacity = '0'; // Hide top board during placement
+                        this.updateUI();
+                        this.renderShipSelector();
+                        this.updatePlacementStatus();
+                    }
+                },
+                
+                initShips() {
                     this.ships = [
                         { id: 0, len: 5, placed: false },
                         { id: 1, len: 4, placed: false },
@@ -2806,18 +2923,12 @@
                     ];
                     this.activeShipId = 0;
                     this.isHorizontal = true;
-                    
-                    document.getElementById('bs-placement-controls').style.display = 'flex';
-                    
-                    this.updateUI();
-                    this.renderShipSelector();
-                    this.updatePlacementStatus();
                 },
                 
                 renderShipSelector() {
                     const selector = document.getElementById('bs-ship-selector');
                     selector.innerHTML = '';
-                    if (this.phase !== 'placement') return;
+                    if (this.phase !== 'placement' && this.phase !== 'p1_placement' && this.phase !== 'p2_placement') return;
                     
                     this.ships.forEach(ship => {
                         if (!ship.placed) {
@@ -2846,7 +2957,7 @@
                 },
 
                 updatePlacementStatus() {
-                    if (this.phase === 'placement') {
+                    if (this.phase === 'placement' || this.phase === 'p1_placement' || this.phase === 'p2_placement') {
                         let activeShip = this.ships.find(s => s.id === this.activeShipId);
                         if (!activeShip) return;
                         document.getElementById('bs-status').textContent = `Place ship (length ${activeShip.len})`;
@@ -2860,37 +2971,43 @@
                 },
                 
                 placeRandomly() {
-                    if (this.phase !== 'placement') return;
+                    if (this.phase !== 'placement' && this.phase !== 'p1_placement' && this.phase !== 'p2_placement') return;
                     let unplacedLengths = this.ships.filter(s => !s.placed).map(s => s.len);
-                    this.placeShipsRandomly(this.playerBoard, unplacedLengths, this.playerFleet);
+                    let targetBoard = (this.phase === 'p2_placement') ? this.aiBoard : this.playerBoard;
+                    let targetFleet = (this.phase === 'p2_placement') ? this.aiFleet : this.playerFleet;
+                    
+                    this.placeShipsRandomly(targetBoard, unplacedLengths, targetFleet);
                     this.ships.forEach(s => s.placed = true);
-                    this.startGame();
+                    this.handlePlacementComplete();
                 },
                 
                 playerBoardClick(r, c) {
-                    if (this.phase !== 'placement') return;
+                    if (this.phase !== 'placement' && this.phase !== 'p1_placement' && this.phase !== 'p2_placement') return;
                     
                     let activeShip = this.ships.find(s => s.id === this.activeShipId);
                     if (!activeShip) return;
                     
-                    if (this.canPlaceShip(this.playerBoard, r, c, activeShip.len, this.isHorizontal)) {
+                    let targetBoard = (this.phase === 'p2_placement') ? this.aiBoard : this.playerBoard;
+                    let targetFleet = (this.phase === 'p2_placement') ? this.aiFleet : this.playerFleet;
+                    
+                    if (this.canPlaceShip(targetBoard, r, c, activeShip.len, this.isHorizontal)) {
                         let coords = [];
                         for (let i = 0; i < activeShip.len; i++) {
                             if (this.isHorizontal) {
-                                this.playerBoard[r][c + i] = 1;
+                                targetBoard[r][c + i] = 1;
                                 coords.push({r: r, c: c + i});
                             } else {
-                                this.playerBoard[r + i][c] = 1;
+                                targetBoard[r + i][c] = 1;
                                 coords.push({r: r + i, c: c});
                             }
                         }
-                        this.playerFleet.push({len: activeShip.len, coords: coords, sunk: false});
+                        targetFleet.push({len: activeShip.len, coords: coords, sunk: false});
                         
                         activeShip.placed = true;
                         
                         let nextShip = this.ships.find(s => !s.placed);
                         if (!nextShip) {
-                            this.startGame();
+                            this.handlePlacementComplete();
                         } else {
                             this.activeShipId = nextShip.id;
                             this.updateUI();
@@ -2900,19 +3017,66 @@
                     }
                 },
                 
+                handlePlacementComplete() {
+                    if (app.settings.gameMode === '1p') {
+                        this.startGame();
+                    } else {
+                        if (this.phase === 'p1_placement') {
+                            this.phase = 'pass_device';
+                            this.showPassDevice("Player 2", () => {
+                                this.phase = 'p2_placement';
+                                this.initShips();
+                                this.currentPlayer = 2;
+                                document.getElementById('bs-bottom-board-title').textContent = "Player 2's Fleet";
+                                this.updateUI();
+                                this.renderShipSelector();
+                                this.updatePlacementStatus();
+                            });
+                        } else if (this.phase === 'p2_placement') {
+                            this.phase = 'pass_device';
+                            this.showPassDevice("Player 1", () => {
+                                this.currentPlayer = 1;
+                                this.startGame();
+                            });
+                        }
+                    }
+                },
+                
+                showPassDevice(playerName, callback) {
+                    const overlay = document.getElementById('bs-pass-overlay');
+                    document.getElementById('bs-pass-text').textContent = `Pass Device to ${playerName}`;
+                    overlay.style.display = 'flex';
+                    this.onPassResume = () => {
+                        overlay.style.display = 'none';
+                        callback();
+                    };
+                },
+                
+                resumeTurn() {
+                    if (this.onPassResume) this.onPassResume();
+                },
+                
                 startGame() {
                     this.phase = 'playing';
                     document.getElementById('bs-placement-controls').style.display = 'none';
                     document.getElementById('bs-ship-selector').innerHTML = '';
                     
-                    this.aiFleet = [];
-                    this.placeShipsRandomly(this.aiBoard, null, this.aiFleet);
+                    if (app.settings.gameMode === '1p') {
+                        this.aiFleet = [];
+                        this.placeShipsRandomly(this.aiBoard, null, this.aiFleet);
+                        document.getElementById('bs-ai-board').style.opacity = '1';
+                        document.getElementById('bs-status').textContent = "Your turn (Attack AI)";
+                    } else {
+                        document.getElementById('bs-ai-board').style.opacity = '1';
+                        document.getElementById('bs-top-board-title').textContent = "Attack Board";
+                        document.getElementById('bs-bottom-board-title').textContent = "Your Fleet";
+                        document.getElementById('bs-status').textContent = `Player ${this.currentPlayer}'s Turn`;
+                    }
                     
                     this.playerShipsLeft = this.playerFleet.length;
                     this.aiShipsLeft = this.aiFleet.length;
                     
                     this.updateUI();
-                    document.getElementById('bs-status').textContent = "Your turn (Attack AI)";
                 },
 
                 placeShipsRandomly(board, shipsToPlaceList, fleetArray) {
@@ -2979,32 +3143,79 @@
                 },
 
                 makeMove(r, c) {
-                    if (this.phase !== 'playing' || this.gameOver || this.currentPlayer !== 1) return;
-                    if (this.aiBoard[r][c] >= 2) return; // already hit
+                    if (this.phase !== 'playing' || this.gameOver) return;
                     
-                    if (this.aiBoard[r][c] === 1) {
-                        this.aiBoard[r][c] = 3; // hit
-                        if (this.checkSunk(this.aiBoard, this.aiFleet, r, c)) {
-                            this.aiShipsLeft--;
+                    if (app.settings.gameMode === '1p') {
+                        if (this.currentPlayer !== 1) return;
+                        if (this.aiBoard[r][c] >= 2) return; // already hit
+                        
+                        if (this.aiBoard[r][c] === 1) {
+                            this.aiBoard[r][c] = 3; // hit
+                            if (this.checkSunk(this.aiBoard, this.aiFleet, r, c)) {
+                                this.aiShipsLeft--;
+                            }
+                        } else {
+                            this.aiBoard[r][c] = 2; // miss
                         }
+                        
+                        this.updateUI();
+                        
+                        if (this.aiShipsLeft <= 0) {
+                            this.endGame("You won!");
+                            return;
+                        }
+                        
+                        this.currentPlayer = 2;
+                        document.getElementById('bs-status').textContent = "AI is thinking...";
+                        setTimeout(() => this.makeAIMove(), 500);
                     } else {
-                        this.aiBoard[r][c] = 2; // miss
+                        // 2P Mode
+                        let targetBoard = (this.currentPlayer === 1) ? this.aiBoard : this.playerBoard;
+                        let targetFleet = (this.currentPlayer === 1) ? this.aiFleet : this.playerFleet;
+                        
+                        if (targetBoard[r][c] >= 2) return;
+                        
+                        let isHit = false;
+                        if (targetBoard[r][c] === 1) {
+                            targetBoard[r][c] = 3;
+                            if (this.checkSunk(targetBoard, targetFleet, r, c)) {
+                                if (this.currentPlayer === 1) this.aiShipsLeft--;
+                                else this.playerShipsLeft--;
+                            }
+                            isHit = true;
+                        } else {
+                            targetBoard[r][c] = 2;
+                        }
+                        
+                        this.updateUI();
+                        
+                        let winner = null;
+                        if (this.aiShipsLeft <= 0) winner = "Player 1 Wins!";
+                        if (this.playerShipsLeft <= 0) winner = "Player 2 Wins!";
+                        
+                        if (winner) {
+                            this.endGame(winner);
+                            return;
+                        }
+                        
+                        // Switch turn after delay
+                        this.phase = 'pass_device';
+                        let nextPlayer = this.currentPlayer === 1 ? 2 : 1;
+                        document.getElementById('bs-status').textContent = isHit ? "Hit!" : "Miss!";
+                        
+                        setTimeout(() => {
+                            this.showPassDevice(`Player ${nextPlayer}`, () => {
+                                this.currentPlayer = nextPlayer;
+                                this.phase = 'playing';
+                                document.getElementById('bs-status').textContent = `Player ${this.currentPlayer}'s Turn`;
+                                this.updateUI();
+                            });
+                        }, 1200);
                     }
-                    
-                    this.updateUI();
-                    
-                    if (this.aiShipsLeft <= 0) {
-                        this.endGame("You won!");
-                        return;
-                    }
-                    
-                    this.currentPlayer = 2;
-                    document.getElementById('bs-status').textContent = "AI is thinking...";
-                    setTimeout(() => this.makeAIMove(), 500);
                 },
 
                 makeAIMove() {
-                    if (this.gameOver) return;
+                    if (this.gameOver || app.settings.gameMode !== '1p') return;
                     
                     let r, c;
                     let validTarget = false;
@@ -3068,20 +3279,36 @@
                 },
 
                 updateUI() {
+                    let topBoard, bottomBoard;
+                    if (app.settings.gameMode === '1p') {
+                        topBoard = this.aiBoard;
+                        bottomBoard = this.playerBoard;
+                    } else {
+                        // 2P mode
+                        if (this.currentPlayer === 1 || this.phase === 'p1_placement') {
+                            topBoard = this.aiBoard; // P2's board
+                            bottomBoard = this.playerBoard; // P1's board
+                        } else {
+                            topBoard = this.playerBoard; // P1's board
+                            bottomBoard = this.aiBoard; // P2's board
+                        }
+                    }
+                    
                     for (let r = 0; r < this.size; r++) {
                         for (let c = 0; c < this.size; c++) {
                             const pCell = document.getElementById(`bs-p-${r}-${c}`);
                             pCell.className = 'bs-cell';
-                            if (this.playerBoard[r][c] === 1) pCell.classList.add('player-ship');
-                            if (this.playerBoard[r][c] === 2) pCell.classList.add('miss');
-                            if (this.playerBoard[r][c] === 3) pCell.classList.add('hit', 'player-ship');
-                            if (this.playerBoard[r][c] === 4) pCell.classList.add('sunk', 'player-ship');
+                            if (bottomBoard[r][c] === 1) pCell.classList.add('player-ship');
+                            if (bottomBoard[r][c] === 2) pCell.classList.add('miss');
+                            if (bottomBoard[r][c] === 3) pCell.classList.add('hit', 'player-ship');
+                            if (bottomBoard[r][c] === 4) pCell.classList.add('sunk', 'player-ship');
                             
                             const aCell = document.getElementById(`bs-a-${r}-${c}`);
                             aCell.className = 'bs-cell';
-                            if (this.aiBoard[r][c] === 2) aCell.classList.add('miss');
-                            if (this.aiBoard[r][c] === 3) aCell.classList.add('hit');
-                            if (this.aiBoard[r][c] === 4) aCell.classList.add('sunk');
+                            if (topBoard[r][c] === 2) aCell.classList.add('miss');
+                            if (topBoard[r][c] === 3) aCell.classList.add('hit');
+                            if (topBoard[r][c] === 4) aCell.classList.add('sunk');
+                            if (this.gameOver && topBoard[r][c] === 1) aCell.classList.add('player-ship');
                         }
                     }
                 },
@@ -3089,14 +3316,7 @@
                 endGame(msg) {
                     this.gameOver = true;
                     document.getElementById('bs-status').textContent = msg;
-                    for (let r = 0; r < this.size; r++) {
-                        for (let c = 0; c < this.size; c++) {
-                            if (this.aiBoard[r][c] === 1) {
-                                const aCell = document.getElementById(`bs-a-${r}-${c}`);
-                                aCell.classList.add('player-ship');
-                            }
-                        }
-                    }
+                    this.updateUI();
                 }
             }
         };
