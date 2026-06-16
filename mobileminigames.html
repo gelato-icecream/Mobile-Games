@@ -1985,6 +1985,7 @@
                     
                     this.addBall();
                     this.lastBallAdded = performance.now();
+                    this.lastBlockAdded = performance.now();
 
                     if (this.mode === 'blocks') {
                         this.setupBlocks();
@@ -2013,6 +2014,26 @@
                             this.blocks.push({x, y, w, h, hp, el});
                         }
                     }
+                },
+
+                spawnRandomBlock(difficulty) {
+                    const w = 12;
+                    const h = 4;
+                    const x = 10 + Math.random() * (80 - w);
+                    const y = 20 + Math.random() * (60 - h);
+                    
+                    const maxHp = Math.min(3, 1 + Math.floor(difficulty / 5));
+                    const hp = 1 + Math.floor(Math.random() * maxHp);
+                    
+                    const el = document.createElement('div');
+                    el.className = `pong-block hit-${hp}`;
+                    el.style.width = `${w}%`;
+                    el.style.height = `${h}%`;
+                    el.style.left = `${x}%`;
+                    el.style.top = `${y}%`;
+                    this.board.appendChild(el);
+                    
+                    this.blocks.push({x, y, w, h, hp, el});
                 },
 
                 addBall() {
@@ -2065,6 +2086,15 @@
                         if (currentTime - this.lastBallAdded > 10000) {
                             this.addBall();
                             this.lastBallAdded = currentTime;
+                        }
+                    }
+
+                    if (this.mode === 'blocks') {
+                        let difficulty = (this.scorePlayer + this.scoreAI);
+                        let spawnRate = Math.max(500, 3000 - difficulty * 150);
+                        if (!this.lastBlockAdded || currentTime - this.lastBlockAdded > spawnRate) {
+                            this.spawnRandomBlock(difficulty);
+                            this.lastBlockAdded = currentTime;
                         }
                     }
 
@@ -2190,11 +2220,7 @@
 
                 checkWin() {
                     this.updateScore();
-                    if (this.scoreAI >= 10) {
-                        this.endGame("AI Wins!");
-                    } else if (this.scorePlayer >= 10) {
-                        this.endGame("You Win!");
-                    }
+                    // Game is endless now, so we don't call endGame on a point limit
                 },
 
                 updateScore() {
